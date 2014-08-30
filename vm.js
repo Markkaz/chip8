@@ -2,7 +2,7 @@ function VM(display, keyboard) {
   this.display = display
   this.keyboard = keyboard
 
-  this.cpuSpeed = 100 // Hz
+  this.cpuSpeed = 200 // Hz
 
   // Allocate 4KB of memory
   this.memory = new Uint8Array(new ArrayBuffer(4096))
@@ -11,6 +11,9 @@ function VM(display, keyboard) {
 
   this.I = 0 // 16-bit register
   this.V = new Uint8Array(new ArrayBuffer(16)) // 8-bit registers
+
+  this.DT = 0   // Delay timer
+  this.ST = 0   // Sound timer
 
   // Default number sprites
   this.loadDefaultSprites()
@@ -60,11 +63,22 @@ VM.prototype.run = function() {
   this.timer = setInterval(function() {
     self.step()
   }, interval)
+
+  this.clock = setInterval(function()
+  {
+      if(this.DT > 0)
+        this.DT--
+      if(this.ST > 0)
+        this.ST--
+  }, 1000 / 60)
 }
 
 VM.prototype.stop = function() {
   clearTimeout(this.timer)
   this.timer = null
+
+    clearTimeout(this.clock)
+    this.clock = null
 }
 
 VM.prototype.step = function() {
@@ -129,15 +143,38 @@ VM.prototype.step = function() {
                   // `8xy0` - Set Vx = Vy
                   this.V[x] = this.V[y]
                   break
+              case 0x8001:
+                  // `8xy1` - Set Vx = Vx OR Vy
+                  this.V[x] = this.V[x] | this.V[y]
+                  break
               case 0x8002:
                   // `8xy2` - Set Vx = Vx AND Vy
                   this.V[x] = this.V[x] & this.V[y]
+                  break
+              case 0x8003:
+                  // `8xy3` - Set Vx = Vx XOR Vy
+                  this.V[x] = this.V[x] ^ this.V[y]
                   break
               case 0x8004:
                   // `8xy4` - Set Vx = Vx + Vy, set VF = carry
                   var sum = this.V[x] + this.V[y]
                   this.V[0xF] = sum > 255 ? 0x01 : 0x00
                   this.V[x] = sum
+                  break
+              case 0x8005:
+                  // `8xy5` - Set Vx = Vx - Vy, set VF = NOT borrow
+                  this.V[0xF] = this.V[x] > this.V[y]
+                  this.V[x] = this.V[x] - this.V[y]
+                  break
+              case 0x8006:
+                  // `8xy6` - Set Vx = Vx SHR 1
+                  this.V[0xF] = this.V[x] & 1
+                  this.V[x] /= 2
+                  break
+              case 0x800E:
+                  // `8xyE` - Set Vx = Vx SHL 1
+                  this.V[0xF] = (this.V[x] >> 8) & 1
+                  this.V[x] *= 2
                   break
               default:
                   this.logUnkownInstruction(instruction)
@@ -184,6 +221,14 @@ VM.prototype.step = function() {
     case 0xF000:
       switch(instruction & 0xF0FF)
       {
+          case 0xF007:
+              // `Fx07` - Set Vx = delay timer value
+              this.V[x] = this.DT
+              break
+          case 0xF018:
+              // `Fx18` - Set sound timer = Vx
+              this.ST - this.V[x]
+              break
           case 0xF029:
               this.I = this.V[x] * 5;
               break;
