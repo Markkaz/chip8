@@ -31,8 +31,6 @@ function Keyboard(element)
 
     element.onkeyup = function(evt)
     {
-        console.log("Key "+evt.which+" released")
-
         if(self.isNumber(evt.which))
         {
             self.keysPressed[evt.which - 48] = false

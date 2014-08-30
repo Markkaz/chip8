@@ -74,8 +74,6 @@ VM.prototype.run = function() {
 }
 
 VM.prototype.stop = function() {
-    console.log('Running stopped...')
-
   clearTimeout(this.timer)
   this.timer = null
 
@@ -130,6 +128,11 @@ VM.prototype.step = function() {
       if(this.V[x] !== kk)
         this.pc += 2;
       break;
+    case 0x5000:
+        // `5xy0 - Skip next instruction if Vx = Vy
+      if(this.V[x] === this.V[y])
+        this.pc += 2
+      break
     case 0x6000:
       // `6xkk` - Set Vx = kk.
       this.V[x] = kk
