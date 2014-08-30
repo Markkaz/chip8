@@ -73,10 +73,13 @@
   <script src="utils.js"></script>
   <script src="vm.js"></script>
   <script src="display.js"></script>
+  <script src="keyboard.js"></script>
   <script src="debugger.js"></script>
   <script>
-    var display = new Display($("canvas")[0])
-    var vm = new VM(display)
+    var canvas = $("canvas")[0]
+    var display = new Display(canvas)
+    var keyboard = new Keyboard(canvas)
+    var vm = new VM(display, keyboard)
     var vmDebugger = new Debugger(vm)
     
     loadROM("15PUZZLE", function(program) {

@@ -1,5 +1,6 @@
-function VM(display) {
+function VM(display, keyboard) {
   this.display = display
+  this.keyboard = keyboard
 
   this.cpuSpeed = 100 // Hz
 
@@ -11,7 +12,37 @@ function VM(display) {
   this.I = 0 // 16-bit register
   this.V = new Uint8Array(new ArrayBuffer(16)) // 8-bit registers
 
+  // Default number sprites
+  this.loadDefaultSprites()
+
   this.stack = []
+}
+
+VM.prototype.loadDefaultSprites = function()
+{
+    var hexChars = [
+        0xF0, 0x90, 0x90, 0x90, 0xF0,   // 0
+        0x20, 0x60, 0x20, 0x20, 0x70,   // 1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0,   // 2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0,   // 3
+        0x90, 0x90, 0xF0, 0x10, 0x10,   // 4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0,   // 5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0,   // 6
+        0xF0, 0x10, 0x20, 0x40, 0x40,   // 7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0,   // 8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0,   // 9
+        0xF0, 0x90, 0xF0, 0x90, 0x90,   // A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0,   // B
+        0xF0, 0x80, 0x80, 0x80, 0xF0,   // C
+        0xE0, 0x90, 0x90, 0x90, 0xE0,   // D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0,   // E
+        0xF0, 0x80, 0xF0, 0x80, 0x80    // F
+    ]
+
+    for(var i = 0; i < hexChars.length; i++)
+    {
+        this.memory[0x000 + i] = hexChars[i];
+    }
 }
 
 VM.prototype.loadProgram = function(program) {
@@ -91,6 +122,33 @@ VM.prototype.step = function() {
       // `7xkk` - Set Vx = Vx + kk.
       this.V[x] = this.V[x] + kk
       break
+    case 0x8000:
+          switch(instruction & 0xF00F)
+          {
+              case 0x8000:
+                  // `8xy0` - Set Vx = Vy
+                  this.V[x] = this.V[y]
+                  break
+              case 0x8002:
+                  // `8xy2` - Set Vx = Vx AND Vy
+                  this.V[x] = this.V[x] & this.V[y]
+                  break
+              case 0x8004:
+                  // `8xy4` - Set Vx = Vx + Vy, set VF = carry
+                  var sum = this.V[x] + this.V[y]
+                  this.V[0xF] = sum > 255 ? 0x01 : 0x00
+                  this.V[x] = sum
+                  break
+              default:
+                  this.logUnkownInstruction(instruction)
+                  break
+          }
+          break
+    case 0x9000:
+        // `9xy0` - Skip next instruction if Vx != Vy
+        if(this.V[x] !== this.V[y])
+            this.pc += 2
+        break
     case 0xA000:
       // `Annn` - Set I = nnn.
       this.I = nnn
@@ -104,12 +162,49 @@ VM.prototype.step = function() {
       var collision = this.drawSprite(this.V[x], this.V[y], this.I, n)
       this.V[0xF] = collision ? 1 : 0
       break
+    case 0xE000:
+      switch(instruction & 0xF0FF)
+      {
+          case 0xE09E:
+              if(this.keyboard.keysPressed[this.V[x]])
+              {
+                  this.pc += 2
+              }
+              break
+          case 0xE0A1:
+              if(!this.keyboard.keysPressed[this.V[x]])
+              {
+                  this.pc += 2
+              }
+              break
+          default:
+              this.logUnkownInstruction(instruction)
+      }
+      break
     case 0xF000:
       switch(instruction & 0xF0FF)
       {
+          case 0xF029:
+              this.I = this.V[x] * 5;
+              break;
+          case 0xF055:
+            // `Fx55 - Store V0 through Vx in memory starting at location I
+            for(var i = 0; i <= x; i++)
+            {
+                this.memory[this.I + i] = this.V[i];
+            }
+            break;
+          case 0xF065:
+            // `Fx65` - Read V0 through Vx from memory starting at location I
+            for(var i = 0; i <= x; i++)
+            {
+                this.V[i] = this.memory[this.I + i];
+            }
+            break;
           case 0xF01E:
             // `Fx1E` - Set I = I + Vx
             this.I += this.V[x]
+            break
           default:
               this.logUnkownInstruction(instruction)
       }
