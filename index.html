@@ -82,7 +82,7 @@
     var vm = new VM(display, keyboard)
     var vmDebugger = new Debugger(vm)
     
-    loadROM("HIDDEN", function(program) {
+    loadROM("WIPEOFF", function(program) {
       vm.loadProgram(program)
       vmDebugger.debug()
     })

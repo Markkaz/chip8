@@ -105,7 +105,7 @@ VM.prototype.step = function() {
           this.pc = this.stack.pop()
           break
         default:
-            this.logUnkownInstruction(instruction)
+            this.pc = nnn
       }
       break
     case 0x1000:
@@ -176,6 +176,11 @@ VM.prototype.step = function() {
                   this.V[0xF] = this.V[x] & 1
                   this.V[x] /= 2
                   break
+              case 0x8007:
+                  // `8xy7` - Set Vx = Vy - Vx, set VF = NOT borrow
+                  this.V[0xF] = this.V[y] > this.V[x]
+                  this.V[x] = this.V[y] - this.V[x]
+                  break
               case 0x800E:
                   // `8xyE` - Set Vx = Vx SHL 1
                   this.V[0xF] = (this.V[x] >> 8) & 1
@@ -195,6 +200,10 @@ VM.prototype.step = function() {
       // `Annn` - Set I = nnn.
       this.I = nnn
       break
+    case 0xB000:
+      // `Bnnn` - Jump to location nnn + V0
+      this.pc = nnn + this.V[0]
+      break
     case 0xC000:
       // `Cxkk` - Set Vx = random byte AND kk.
       this.V[x] = (Math.random() * (0xFF + 1)) & kk
@@ -208,12 +217,14 @@ VM.prototype.step = function() {
       switch(instruction & 0xF0FF)
       {
           case 0xE09E:
+              // `Ex9E` - Skip next instruction if key with the value of Vx is pressed
               if(this.keyboard.keysPressed[this.V[x]])
               {
                   this.pc += 2
               }
               break
           case 0xE0A1:
+              // `ExA1` - Skip next instruction if key with the value of Vx is not pressed
               if(!this.keyboard.keysPressed[this.V[x]])
               {
                   this.pc += 2
@@ -249,6 +260,7 @@ VM.prototype.step = function() {
               this.ST - this.V[x]
               break
           case 0xF029:
+              // `Fx29` - Set I = location of sprite for digit Vx
               this.I = this.V[x] * 5;
               break;
           case 0xF033:
