@@ -2,7 +2,7 @@ function VM(display, keyboard) {
   this.display = display
   this.keyboard = keyboard
 
-  this.cpuSpeed = 200 // Hz
+  this.cpuSpeed = 100 // Hz
 
   // Allocate 4KB of memory
   this.memory = new Uint8Array(new ArrayBuffer(4096))
@@ -66,14 +66,16 @@ VM.prototype.run = function() {
 
   this.clock = setInterval(function()
   {
-      if(this.DT > 0)
-        this.DT--
-      if(this.ST > 0)
-        this.ST--
+      if(self.DT > 0)
+        self.DT--
+      if(self.ST > 0)
+        self.ST--
   }, 1000 / 60)
 }
 
 VM.prototype.stop = function() {
+    console.log('Running stopped...')
+
   clearTimeout(this.timer)
   this.timer = null
 
@@ -225,6 +227,20 @@ VM.prototype.step = function() {
               // `Fx07` - Set Vx = delay timer value
               this.V[x] = this.DT
               break
+          case 0xF00A:
+              // `Fx0A` - Wait for a key press, store the value of the key in Vx
+              var self = this
+              this.stop()
+              this.keyboard.onkeypressed = function(key)
+              {
+                  self.V[x] = key
+                  self.run()
+              }
+              break
+          case 0xF015:
+              // `Fx15` - Set delay timer = Vx
+              this.DT = this.V[x]
+              break
           case 0xF018:
               // `Fx18` - Set sound timer = Vx
               this.ST - this.V[x]
@@ -232,6 +248,15 @@ VM.prototype.step = function() {
           case 0xF029:
               this.I = this.V[x] * 5;
               break;
+          case 0xF033:
+              // `Fx33` - Store BCD representation of Vx in memory locations I, I + 1, and I + 2
+              var number = this.V[x]
+              for(var i = 2; i >= 0; i--)
+              {
+                  this.memory[this.I + i]  = parseInt(number % 10)
+                  number /= 10
+              }
+              break
           case 0xF055:
             // `Fx55 - Store V0 through Vx in memory starting at location I
             for(var i = 0; i <= x; i++)

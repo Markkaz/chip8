@@ -1,5 +1,6 @@
 function Keyboard(element)
 {
+    this.onkeypressed = null
     this.keysPressed = []
     for(var i = 0; i < 16; i++)
     {
@@ -9,15 +10,22 @@ function Keyboard(element)
     var self = this
     element.onkeydown = function(evt)
     {
-        console.log('Key '+evt.which+' pressed')
-
+        var key = null
         if(self.isNumber(evt.which))
         {
-            self.keysPressed[evt.which - 48] = true
+            key = evt.which - 48
+            self.keysPressed[key] = true
         }
         else if(self.isAToF(evt.which))
         {
-            self.keysPressed[evt.which - 65 + 10] = true
+            key = evt.which - 65 + 10
+            self.keysPressed[key] = true
+        }
+
+        if(key != null && self.onkeypressed != null)
+        {
+            self.onkeypressed(key)
+            self.onkeypressed = null
         }
     }
 

@@ -82,7 +82,7 @@
     var vm = new VM(display, keyboard)
     var vmDebugger = new Debugger(vm)
     
-    loadROM("BLINKY", function(program) {
+    loadROM("BLITZ", function(program) {
       vm.loadProgram(program)
       vmDebugger.debug()
     })
