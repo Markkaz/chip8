@@ -59,6 +59,8 @@ VM.prototype.step = function() {
           // `00EE` - Return from a subroutine.
           this.pc = this.stack.pop()
           break
+        default:
+            this.logUnkownInstruction(instruction)
       }
       break
     case 0x1000:
@@ -108,8 +110,13 @@ VM.prototype.step = function() {
           case 0xF01E:
             // `Fx1E` - Set I = I + Vx
             this.I += this.V[x]
+          default:
+              this.logUnkownInstruction(instruction)
       }
       break;
+
+    default:
+      this.logUnkownInstruction(instruction)
   }
 }
 
@@ -153,4 +160,9 @@ VM.prototype.drawSprite = function(x, y, address, nbytes) {
   }
 
   return collision
+}
+
+VM.prototype.logUnkownInstruction = function(instruction)
+{
+    console.log(hex(instruction))
 }
