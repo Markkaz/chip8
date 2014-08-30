@@ -1,6 +1,7 @@
-function VM(display, keyboard) {
+function VM(display, keyboard, sound) {
   this.display = display
   this.keyboard = keyboard
+  this.sound = sound
 
   this.cpuSpeed = 100 // Hz
 
@@ -69,7 +70,12 @@ VM.prototype.run = function() {
       if(self.DT > 0)
         self.DT--
       if(self.ST > 0)
+      {
         self.ST--
+        if(!self.sound.isStarted) self.sound.start()
+      }
+      else if(self.sound.isStarted)
+        self.sound.stop()
   }, 1000 / 60)
 }
 
@@ -257,7 +263,8 @@ VM.prototype.step = function() {
               break
           case 0xF018:
               // `Fx18` - Set sound timer = Vx
-              this.ST - this.V[x]
+              this.ST = this.V[x]
+              console.log('Play sound...')
               break
           case 0xF029:
               // `Fx29` - Set I = location of sprite for digit Vx

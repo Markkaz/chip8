@@ -74,12 +74,14 @@
   <script src="vm.js"></script>
   <script src="display.js"></script>
   <script src="keyboard.js"></script>
+  <script src="Sound.js"></script>
   <script src="debugger.js"></script>
   <script>
     var canvas = $("canvas")[0]
     var display = new Display(canvas)
     var keyboard = new Keyboard(canvas)
-    var vm = new VM(display, keyboard)
+    var sound = new Sound()
+    var vm = new VM(display, keyboard, sound)
     var vmDebugger = new Debugger(vm)
     
     loadROM("WIPEOFF", function(program) {
